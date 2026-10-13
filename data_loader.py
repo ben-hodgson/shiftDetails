@@ -27,8 +27,10 @@ from datetime import date, datetime
 
 import pandas as pd
 
-CSV_PATH = os.path.join(os.path.dirname(__file__), "data", "shift_details_24-25.csv")
-DB_PATH = os.path.join(os.path.dirname(__file__), "data", "shift_details.db")
+DATA_DIR = os.path.join(os.path.dirname(__file__), "data")
+os.makedirs(DATA_DIR, exist_ok=True)
+CSV_PATH = os.environ.get("CSV_PATH", os.path.join(DATA_DIR, "shift_details_24-25.csv"))
+DB_PATH = os.environ.get("DB_PATH", os.path.join(DATA_DIR, "shift_details.db"))
 
 TABLE = "shifts"
 

@@ -17,4 +17,7 @@ data/*.xlsx
 data/*.xls
 data/*.pdf
 data/*.txt
-!data/README* 2>&1 | tail -0
+!data/README*
+!data/.gitkeep
+!data/sample*.csv
+!data/README.md 2>&1 | tail -0

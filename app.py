@@ -26,14 +26,75 @@ def _build_payload() -> dict:
     }
 
 
-# The app serves straight from SQLite. If the database hasn't been built yet,
-# import the CSV once, then carry on.
+_PAYLOAD = None
+
+
+def _init_payload():
+    global _PAYLOAD
+    try:
+        _PAYLOAD = _build_payload()
+    except Exception:
+        # If database is empty or missing, create empty payload
+        _PAYLOAD = {
+            "records": [],
+            "meta": {
+                "total_rows": 0,
+                "full_shift_rows": 0,
+                "earliest_date": None,
+                "latest_date": None,
+                "weight_kg_total": 0,
+                "weight_kg_mean": 0,
+                "totes_total": 0,
+                "totes_mean": 0,
+                "amount_of_drops_total": 0,
+                "amount_of_drops_mean": 0,
+                "shift_length_hours_total": 0,
+                "shift_length_hours_mean": 0,
+                "wait_time_minutes_total": 0,
+                "wait_time_minutes_mean": 0,
+                "van_count": 0,
+                "manager_count": 0,
+                "shifts_with_drops": 0,
+            },
+            "filters": {
+                "managers": [],
+                "manager_list": [],
+                "vans": [],
+                "months": [],
+                "years": [],
+                "weekdays": [],
+            },
+        }
+
+
+# Ensure database exists (create empty one if needed)
 if not os.path.exists(data_loader.DB_PATH):
-    import import_db
+    # Create empty database with schema
+    import sqlite3
 
-    import_db.main()
+    os.makedirs(data_loader.DATA_DIR, exist_ok=True)
+    with sqlite3.connect(data_loader.DB_PATH) as conn:
+        conn.execute(
+            """CREATE TABLE IF NOT EXISTS shifts (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                date TEXT,
+                shift_start TEXT,
+                shift_end TEXT,
+                due_leave TEXT,
+                wait_time REAL,
+                first_drop TEXT,
+                last_drop TEXT,
+                amount_of_drops REAL,
+                shift_length REAL,
+                back_at_store TEXT,
+                weight_kg REAL,
+                van TEXT,
+                managers TEXT,
+                totes REAL
+            )"""
+        )
 
-_PAYLOAD = _build_payload()
+_init_payload()
 
 
 @app.route("/")
@@ -50,6 +111,34 @@ def api_data():
     return jsonify(_PAYLOAD)
 
 
+@app.route("/api/upload", methods=["POST"])
+def upload_csv():
+    """Upload a CSV file and import it into the database."""
+    global _PAYLOAD
+
+    if "file" not in request.files:
+        return jsonify({"ok": False, "errors": ["no file provided"]}), 400
+
+    file = request.files["file"]
+    if file.filename == "":
+        return jsonify({"ok": False, "errors": ["no file selected"]}), 400
+
+    if not file.filename.lower().endswith(".csv"):
+        return jsonify({"ok": False, "errors": ["file must be a CSV"]}), 400
+
+    os.makedirs(data_loader.DATA_DIR, exist_ok=True)
+    upload_path = os.path.join(data_loader.DATA_DIR, file.filename)
+    file.save(upload_path)
+
+    try:
+        frame = data_loader.load_from_csv(upload_path)
+        rows = data_loader.write_to_sqlite(frame)
+        _PAYLOAD = _build_payload()
+        return jsonify({"ok": True, "rows": int(rows), "meta": _PAYLOAD["meta"]})
+    except Exception as e:
+        return jsonify({"ok": False, "errors": [str(e)]}), 400
+
+
 @app.route("/api/shifts", methods=["POST"])
 def add_shift():
     """Validate and insert a new shift, then serve the refreshed dataset."""
@@ -63,14 +152,14 @@ def add_shift():
     if errors:
         return jsonify({"ok": False, "errors": errors}), 400
 
-    new_id = data_loader.insert_shift(**row)
+    shift_id = data_loader.insert_shift(row)
     _PAYLOAD = _build_payload()
-    return jsonify({"ok": True, "id": new_id, "meta": _PAYLOAD["meta"]}), 201
+    return jsonify({"ok": True, "id": shift_id, "meta": _PAYLOAD["meta"]})
 
 
 @app.route("/api/shifts/<int:shift_id>", methods=["PUT"])
 def update_shift(shift_id: int):
-    """Replace every field of an existing shift."""
+    """Validate and update an existing shift, then serve the refreshed dataset."""
     global _PAYLOAD
 
     body = request.get_json(silent=True)
