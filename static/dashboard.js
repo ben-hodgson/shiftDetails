@@ -783,6 +783,32 @@
     });
   }
 
+  var clearDbBtn = document.getElementById('clear-db-btn');
+  if (clearDbBtn) {
+    clearDbBtn.addEventListener('click', function () {
+      if (confirm('Are you sure you want to clear ALL data from the database? This cannot be undone.')) {
+        clearDbBtn.disabled = true;
+        clearDbBtn.textContent = 'Clearing...';
+        fetch('/api/database/clear', { method: 'POST' })
+          .then(function (resp) { return resp.json(); })
+          .then(function (data) {
+            if (data.ok) {
+              location.reload();
+            } else {
+              alert('Clear failed: ' + ((data.errors || []).join(', ')));
+              clearDbBtn.disabled = false;
+              clearDbBtn.textContent = 'Clear DB';
+            }
+          })
+          .catch(function (e) {
+            alert('Clear failed: ' + e);
+            clearDbBtn.disabled = false;
+            clearDbBtn.textContent = 'Clear DB';
+          });
+      }
+    });
+  }
+
   window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", function (e) {
     if (!localStorage.getItem("shift-dash-theme")) applyTheme(e.matches ? "dark" : "light");
   });

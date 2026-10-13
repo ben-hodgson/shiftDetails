@@ -139,6 +139,22 @@ def upload_csv():
         return jsonify({"ok": False, "errors": [str(e)]}), 400
 
 
+@app.route("/api/database/clear", methods=["POST"])
+def clear_database():
+    """Clear all shifts from the database."""
+    global _PAYLOAD
+
+    try:
+        import sqlite3
+
+        with sqlite3.connect(data_loader.DB_PATH) as conn:
+            conn.execute(f'DELETE FROM "{data_loader.TABLE}"')
+        _PAYLOAD = _build_payload()
+        return jsonify({"ok": True, "meta": _PAYLOAD["meta"]})
+    except Exception as e:
+        return jsonify({"ok": False, "errors": [str(e)]}), 500
+
+
 @app.route("/api/shifts", methods=["POST"])
 def add_shift():
     """Validate and insert a new shift, then serve the refreshed dataset."""
@@ -152,7 +168,10 @@ def add_shift():
     if errors:
         return jsonify({"ok": False, "errors": errors}), 400
 
-    shift_id = data_loader.insert_shift(row)
+    try:
+        shift_id = data_loader.insert_shift(row)
+    except Exception as e:
+        return jsonify({"ok": False, "errors": [str(e)]}), 500
     _PAYLOAD = _build_payload()
     return jsonify({"ok": True, "id": shift_id, "meta": _PAYLOAD["meta"]})
 
