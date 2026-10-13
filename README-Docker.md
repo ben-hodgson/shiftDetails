@@ -2,46 +2,38 @@
 
 This guide will help you deploy Shift Details in Unraid using the Docker Compose template or the "Add Container" feature.
 
-## Quick Start - Using Docker Compose
+## Quick Start - Using Prebuilt Image from GHCR (Recommended)
 
-If you have Docker Compose enabled in Unraid (or using Community Applications), you can use the `docker-compose.yml` file directly.
+The easiest way for Unraid is to use the prebuilt image from GitHub Container Registry. A GitHub Actions workflow will automatically build and publish new images on pushes to `main`.
 
-1. Clone or download this repository to your Unraid server (e.g., `/mnt/user/appdata/shiftdetails/`)
-2. Navigate to that directory in a terminal
-3. Run `docker compose up -d`
+### Using docker-compose (Unraid 6.9+)
 
-## Unraid "Add Container" Method
+1. On your Unraid server, create a directory for the app (e.g., `/mnt/user/appdata/shiftdetails/`)
+2. Download/copy `docker-compose.ghcr.yml` to that directory and rename it to `docker-compose.yml`
+3. In Unraid WebUI, go to **Docker > Docker Compose**
+4. Create a new stack pointing to that directory, or paste the contents
+5. Deploy the stack
 
-Unraid's web UI allows you to add containers directly. Since we have a `Dockerfile`, you can build from source.
+The provided `docker-compose.ghcr.yml` uses: `ghcr.io/ben-hodgson/shiftdetails:main`
 
-### Option 1: Build from GitHub Repository
+### Using "Add Container" in Unraid WebUI
 
-1. In Unraid WebUI, go to **Docker > Add Container**
-2. Set the following:
-
-**Repository**: `ben-hodgson/shiftdetails`  
-**Build**: `Yes` (Unraid will build from Dockerfile)  
-**Branch**: `main`
-
-Or if you prefer to use the git URL directly:
-**Repository**: `ghcr.io/ben-hodgson/shiftdetails` (if you push to GHCR) - Not set up yet. Better to build from source.
-
-Alternatively, use the template fields:
+1. Go to **Docker > Add Container**
+2. Set:
 - **Name**: `shiftdetails`
-- **Repository**: `https://github.com/ben-hodgson/shiftDetails.git#main`
-- **Build Context**: `.` (default)
-- **Dockerfile**: `Dockerfile`
+- **Repository**: `ghcr.io/ben-hodgson/shiftdetails:main`
+- **Network Type**: `bridge` (default)
+- **Privileged**: `No`
 
 **Ports**:
-- Host Port: `5000`
-- Container Port: `5000` (TCP)
+- Host Port: `5000`, Container Port: `5000`, TCP
 
 **Volumes**:
-- Host Path: `/mnt/user/appdata/shiftdetails/data` (or any location on your array/cache)
+- Host Path: `/mnt/user/appdata/shiftdetails/data`
 - Container Path: `/app/data`
 - Access Mode: `Read/Write`
 
-**Environment Variables** (optional):
+**Environment** (optional):
 - `FLASK_ENV` = `production`
 - `FLASK_HOST` = `0.0.0.0`
 
@@ -49,11 +41,9 @@ Alternatively, use the template fields:
 
 3. Click **Apply**
 
-### Option 2: Use docker-compose.yml in Unraid
+## Option 2: Build from Source
 
-Unraid 6.9+ supports Docker Compose natively. You can:
-1. Go to **Docker > Docker Compose**
-2. Create a new stack, paste the contents of `docker-compose.yml`, and deploy
+If you prefer to build locally (e.g., for modifications), use the original `docker-compose.yml` which uses `build: .` or follow the build instructions below.
 
 ## Data Persistence
 
@@ -69,4 +59,6 @@ Once running, access the app at: `http://<unraid-ip>:5000`
 
 ## Updating
 
-If building from GitHub, you can just pull/rebuild the container in Unraid to get the latest changes.
+Since you're using the `:main` tag from GHCR, new builds will be published automatically on each push to main. To update on Unraid:
+- **Docker Compose**: `docker compose pull && docker compose up -d` in the directory, or use the "Pull Latest" option in Unraid
+- **Add Container**: Click "Check for Updates" or recreate the container
