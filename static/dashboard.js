@@ -748,6 +748,41 @@
     applyTheme(next);
   });
 
+  var uploadCsvBtn = document.getElementById('upload-csv-btn');
+  var uploadCsvInput = document.getElementById('upload-csv-input');
+  if (uploadCsvBtn && uploadCsvInput) {
+    uploadCsvBtn.addEventListener('click', function () { uploadCsvInput.click(); });
+    uploadCsvInput.addEventListener('change', function (ev) {
+      var file = ev.target.files[0];
+      if (!file) return;
+      var formData = new FormData();
+      formData.append('file', file);
+      uploadCsvBtn.disabled = true;
+      uploadCsvBtn.textContent = 'Uploading...';
+      fetch('/api/upload', { method: 'POST', body: formData })
+        .then(function (resp) { return resp.json(); })
+        .then(function (data) {
+          if (data.ok) {
+            uploadCsvBtn.textContent = 'Upload CSV';
+            uploadCsvBtn.disabled = false;
+            uploadCsvInput.value = '';
+            location.reload();
+          } else {
+            alert('Upload failed: ' + ((data.errors || []).join(', ')));
+            uploadCsvBtn.textContent = 'Upload CSV';
+            uploadCsvBtn.disabled = false;
+            uploadCsvInput.value = '';
+          }
+        })
+        .catch(function (e) {
+          alert('Upload failed: ' + e);
+          uploadCsvBtn.textContent = 'Upload CSV';
+          uploadCsvBtn.disabled = false;
+          uploadCsvInput.value = '';
+        });
+    });
+  }
+
   window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", function (e) {
     if (!localStorage.getItem("shift-dash-theme")) applyTheme(e.matches ? "dark" : "light");
   });
