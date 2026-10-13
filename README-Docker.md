@@ -33,6 +33,11 @@ The provided `docker-compose.ghcr.yml` uses: `ghcr.io/ben-hodgson/shiftdetails:m
 - Container Path: `/app/data`
 - Access Mode: `Read/Write`
 
+**Environment Variables**:
+- Key: `DB_PATH`, Value: `/app/data/shift_details.db`
+- Key: `DATA_DIR`, Value: `/app/data`
+- Key: `FLASK_ENV`, Value: `production` (optional)
+
 **Environment** (optional):
 - `FLASK_ENV` = `production`
 - `FLASK_HOST` = `0.0.0.0`
