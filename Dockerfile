@@ -19,6 +19,8 @@ EXPOSE 5000
 # Set environment variables
 ENV FLASK_APP=app.py
 ENV FLASK_ENV=production
+ENV DB_PATH=/app/data/shift_details.db
+ENV DATA_DIR=/app/data
 
 # Run the application
 CMD ["python", "app.py"]

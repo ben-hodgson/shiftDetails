@@ -27,10 +27,11 @@ from datetime import date, datetime
 
 import pandas as pd
 
-DATA_DIR = os.path.join(os.path.dirname(__file__), "data")
+# Allow overriding via env vars; default to ./data
+DATA_DIR = os.environ.get("DATA_DIR") or os.path.join(os.path.dirname(__file__), "data")
 os.makedirs(DATA_DIR, exist_ok=True)
-CSV_PATH = os.environ.get("CSV_PATH", os.path.join(DATA_DIR, "shift_details_24-25.csv"))
-DB_PATH = os.environ.get("DB_PATH", os.path.join(DATA_DIR, "shift_details.db"))
+CSV_PATH = os.environ.get("CSV_PATH") or os.path.join(DATA_DIR, "shift_details_24-25.csv")
+DB_PATH = os.environ.get("DB_PATH") or os.path.join(DATA_DIR, "shift_details.db")
 
 TABLE = "shifts"
 
