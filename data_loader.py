@@ -266,8 +266,10 @@ def normalise_shift_input(data: dict) -> tuple[dict, list[str]]:
     return row, errors
 
 
-def insert_shift(db_path: str = DB_PATH, table: str = TABLE, **row) -> int:
+def insert_shift(row: dict | None = None, db_path: str = DB_PATH, table: str = TABLE, **kwargs) -> int:
     """Insert one shift row. Keys must be DB_COLUMNS. Returns the new rowid."""
+    if row is None:
+        row = kwargs
     values = [row.get(column) for column in DB_COLUMNS]
     columns = ", ".join(f'"{column}"' for column in DB_COLUMNS)
     placeholders = ", ".join("?" for _ in DB_COLUMNS)
@@ -312,7 +314,11 @@ def load_shifts(db_path: str = DB_PATH, table: str = TABLE) -> pd.DataFrame:
             df[display] = raw[db_column]
 
     if "id" in raw.columns:
-        df["id"] = raw["id"].astype("int64")
+        # Ensure we only take the id column (not others named id)
+        id_col = raw["id"]
+        if hasattr(id_col, "iloc"):
+            id_col = id_col.iloc[:, 0] if id_col.ndim > 1 else id_col
+        df["id"] = pd.to_numeric(id_col, errors="coerce").fillna(0).astype("int64")
     else:
         df["id"] = range(1, len(df) + 1)
 
