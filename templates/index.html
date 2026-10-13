@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Shift Details Dashboard 2024&ndash;2025</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <script id="shift-data" type="application/json">{{ data_json | safe }}</script>
+  <script src="{{ url_for('plotly_js') }}"></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div>
+        <h1>Shift Details Dashboard</h1>
+        <p class="subtitle">
+          Delivery shift performance &middot;
+          <span id="meta-range"></span>
+        </p>
+      </div>
+      <nav class="topbar-nav" aria-label="Main">
+        <a href="/" class="nav-link active">Dashboard</a>
+        <a href="/entries" class="nav-link">Entries</a>
+      </nav>
+      <div class="topbar-actions">
+        <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Toggle dark mode">
+          <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+          <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+        </button>
+        <div class="topbar-badge">
+          <span class="badge-dot"></span>
+          <span id="meta-rows"></span> shifts loaded
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="filters card">
+      <div class="filter-field">
+        <label for="filter-from">From</label>
+        <input type="date" id="filter-from">
+      </div>
+      <div class="filter-field">
+        <label for="filter-to">To</label>
+        <input type="date" id="filter-to">
+      </div>
+      <div class="filter-field">
+        <label for="filter-manager">Manager</label>
+        <select id="filter-manager"></select>
+      </div>
+      <div class="filter-field">
+        <label for="filter-van">Van</label>
+        <select id="filter-van"></select>
+      </div>
+      <div class="filter-field">
+        <label for="filter-shift">Shift length</label>
+        <select id="filter-shift">
+          <option value="all">All lengths</option>
+          <option value="short">Short (&le; 6h)</option>
+          <option value="standard">Standard (7&ndash;8h)</option>
+          <option value="long">Long (&ge; 9h)</option>
+        </select>
+      </div>
+      <button id="filter-reset" class="btn-reset" type="button">Reset</button>
+      <div class="filter-count">
+        Showing <strong id="visible-count">0</strong> of <span id="total-count">0</span> shifts
+      </div>
+    </section>
+
+    <section class="card add-shift">
+      <div class="add-shift-header">
+        <div>
+          <h2>Add shift</h2>
+          <p class="chart-note">New rows are written to the SQLite database and appear on every chart instantly.</p>
+        </div>
+        <button id="add-shift-toggle" class="btn-primary" type="button" aria-expanded="false">Add shift</button>
+      </div>
+      <div id="add-shift-body" class="add-shift-body hidden">
+        <form id="add-shift-form" autocomplete="off">
+          <div class="form-grid">
+            <div class="form-field">
+              <label for="f-date">Date *</label>
+              <input id="f-date" type="date" data-field="date" required>
+            </div>
+            <div class="form-field">
+              <label for="f-shift-start">Shift start</label>
+              <input id="f-shift-start" type="time" data-field="shift_start">
+            </div>
+            <div class="form-field">
+              <label for="f-shift-end">Shift end</label>
+              <input id="f-shift-end" type="time" data-field="shift_end">
+            </div>
+            <div class="form-field">
+              <label for="f-due-leave">Due to leave</label>
+              <input id="f-due-leave" type="time" data-field="due_leave">
+            </div>
+            <div class="form-field">
+              <label for="f-first-drop">First drop</label>
+              <input id="f-first-drop" type="time" data-field="first_drop">
+            </div>
+            <div class="form-field">
+              <label for="f-last-drop">Last drop</label>
+              <input id="f-last-drop" type="time" data-field="last_drop">
+            </div>
+            <div class="form-field">
+              <label for="f-back-at-store">Back at store</label>
+              <input id="f-back-at-store" type="time" data-field="back_at_store">
+            </div>
+            <div class="form-field">
+              <label for="f-wait">Wait time (min)</label>
+              <input id="f-wait" type="number" min="0" step="1" data-field="wait_time">
+            </div>
+            <div class="form-field">
+              <label for="f-drops">Amount of drops</label>
+              <input id="f-drops" type="number" min="0" step="1" data-field="amount_of_drops">
+            </div>
+            <div class="form-field">
+              <label for="f-length">Shift length (h)</label>
+              <input id="f-length" type="number" min="0" step="0.5" data-field="shift_length">
+            </div>
+            <div class="form-field">
+              <label for="f-weight">Weight of van (kg)</label>
+              <input id="f-weight" type="number" min="0" step="0.01" data-field="weight_kg">
+            </div>
+            <div class="form-field">
+              <label for="f-totes">Totes</label>
+              <input id="f-totes" type="number" min="0" step="1" data-field="totes">
+            </div>
+            <div class="form-field">
+              <label for="f-van">Van registration</label>
+              <input id="f-van" type="text" placeholder="e.g. PO19 ZFN" data-field="van">
+            </div>
+            <div class="form-field">
+              <label for="f-managers">Managers name</label>
+              <input id="f-managers" type="text" placeholder="e.g. Steven, Katie" data-field="managers">
+            </div>
+          </div>
+          <div class="form-actions">
+            <button id="add-shift-submit" type="submit" class="btn-primary">Save shift</button>
+            <button id="add-shift-cancel" type="button" class="btn-reset">Cancel</button>
+            <span id="add-shift-result" class="form-result"></span>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <section class="kpis" id="kpi-grid"></section>
+
+    <section class="chart-grid">
+      <div class="card chart-card chart-wide">
+        <h2>Deliveries per shift over time</h2>
+        <p class="chart-note">Scatter shows each individual shift; the line is a 30-shift rolling average.</p>
+        <div class="chart" id="chart-trend"></div>
+      </div>
+
+      <div class="card chart-card">
+        <h2>Monthly delivery totals</h2>
+        <p class="chart-note">Bars are total drops, the line tracks the number of shifts.</p>
+        <div class="chart" id="chart-monthly"></div>
+      </div>
+
+      <div class="card chart-card">
+        <h2>Shifts by day of week</h2>
+        <p class="chart-note">Number of shifts worked on each weekday in the selected range.</p>
+        <div class="chart" id="chart-weekday"></div>
+      </div>
+
+      <div class="card chart-card">
+        <h2>Wait time distribution</h2>
+        <p class="chart-note">Minutes waited before the first drop could leave the store.</p>
+        <div class="chart" id="chart-wait"></div>
+      </div>
+
+      <div class="card chart-card">
+        <h2>Drops per shift distribution</h2>
+        <p class="chart-note">How many deliveries a typical shift completes.</p>
+        <div class="chart" id="chart-drops-dist"></div>
+      </div>
+
+      <div class="card chart-card">
+        <h2>Average van weight by month</h2>
+        <p class="chart-note">Mean loaded weight (kg) recorded when the van departs.</p>
+        <div class="chart" id="chart-weight"></div>
+      </div>
+
+      <div class="card chart-card">
+        <h2>Totes vs van weight</h2>
+        <p class="chart-note">Each point is a shift, coloured by number of drops.</p>
+        <div class="chart" id="chart-totes-weight"></div>
+      </div>
+
+      <div class="card chart-card">
+        <h2>Manager leaderboard</h2>
+        <p class="chart-note">Total drops attributed to each manager (shifts with co-managers count for each).</p>
+        <div class="chart" id="chart-managers"></div>
+      </div>
+
+      <div class="card chart-card">
+        <h2>Van fleet usage</h2>
+        <p class="chart-note">Number of shifts per van registration.</p>
+        <div class="chart" id="chart-vans"></div>
+      </div>
+
+      <div class="card chart-card">
+        <h2>Shift length breakdown</h2>
+        <p class="chart-note">Distribution of scheduled shift lengths.</p>
+        <div class="chart" id="chart-shift-length"></div>
+      </div>
+
+      <div class="card chart-card">
+        <h2>Drops per hour by month</h2>
+        <p class="chart-note">Delivery efficiency: average drops completed per working hour.</p>
+        <div class="chart" id="chart-efficiency"></div>
+      </div>
+
+      <div class="card chart-card">
+        <h2>Back-at-store vs shift end</h2>
+        <p class="chart-note">How the actual return time compares with the rostered finish.</p>
+        <div class="chart" id="chart-return"></div>
+      </div>
+    </section>
+
+    <footer class="footer">
+      <span id="meta-generated"></span>
+    </footer>
+  </main>
+
+  <script src="{{ url_for('static', filename='dashboard.js') }}"></script>
+</body>
+</html>

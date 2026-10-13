@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Shift Entries &middot; Shift Details Dashboard</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div>
+        <h1>Shift Entries</h1>
+        <p class="subtitle">
+          Log of every recorded shift &middot;
+          <span id="meta-range"></span>
+        </p>
+      </div>
+      <nav class="topbar-nav" aria-label="Main">
+        <a href="/" class="nav-link">Dashboard</a>
+        <a href="/entries" class="nav-link active">Entries</a>
+      </nav>
+      <div class="topbar-actions">
+        <a href="/#add-shift" class="btn-primary topbar-add">Add shift</a>
+        <button id="theme-toggle" class="theme-toggle" type="button" aria-label="Toggle dark mode">
+          <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+          <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+        </button>
+        <div class="topbar-badge">
+          <span class="badge-dot"></span>
+          <span id="meta-rows"></span> entries
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="card filters">
+      <div class="filter-field filter-search">
+        <label for="entry-search">Search</label>
+        <input id="entry-search" type="search" placeholder="Date, van, manager&hellip;" autocomplete="off">
+      </div>
+      <div class="filter-field">
+        <label for="entry-manager">Manager</label>
+        <select id="entry-manager"></select>
+      </div>
+      <div class="filter-field">
+        <label for="entry-van">Van</label>
+        <select id="entry-van"></select>
+      </div>
+      <div class="filter-field">
+        <label for="entry-limit">Show</label>
+        <select id="entry-limit">
+          <option value="100">100 rows</option>
+          <option value="250">250 rows</option>
+          <option value="all" selected>All rows</option>
+        </select>
+      </div>
+      <button id="entry-reset" class="btn-reset" type="button">Reset</button>
+      <div class="filter-count" id="entry-count"></div>
+    </section>
+
+    <section class="card table-card">
+      <div class="table-wrap">
+        <table class="entries" id="entry-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Date</th>
+              <th>Shift</th>
+              <th>Wait (min)</th>
+              <th>Drops</th>
+              <th>Length</th>
+              <th>Weight (kg)</th>
+              <th>Van</th>
+              <th>Managers</th>
+              <th>Totes</th>
+              <th class="th-actions">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="entry-body"></tbody>
+        </table>
+        <div id="entry-empty" class="empty hidden">No entries match your filters.</div>
+      </div>
+    </section>
+
+    <footer class="footer">
+      <span id="meta-generated"></span>
+    </footer>
+  </main>
+
+  <div id="edit-backdrop" class="modal-backdrop hidden">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="edit-title">
+      <h3 id="edit-title">Edit entry</h3>
+      <p class="chart-note">Saving replaces every field of this entry in the SQLite database.</p>
+      <form id="edit-form" autocomplete="off">
+        <input type="hidden" id="edit-id">
+        <div class="form-grid">
+          <div class="form-field">
+            <label for="e-date">Date *</label>
+            <input id="e-date" type="date" data-field="date" required>
+          </div>
+          <div class="form-field">
+            <label for="e-shift-start">Shift start</label>
+            <input id="e-shift-start" type="time" data-field="shift_start">
+          </div>
+          <div class="form-field">
+            <label for="e-shift-end">Shift end</label>
+            <input id="e-shift-end" type="time" data-field="shift_end">
+          </div>
+          <div class="form-field">
+            <label for="e-due-leave">Due to leave</label>
+            <input id="e-due-leave" type="time" data-field="due_leave">
+          </div>
+          <div class="form-field">
+            <label for="e-first-drop">First drop</label>
+            <input id="e-first-drop" type="time" data-field="first_drop">
+          </div>
+          <div class="form-field">
+            <label for="e-last-drop">Last drop</label>
+            <input id="e-last-drop" type="time" data-field="last_drop">
+          </div>
+          <div class="form-field">
+            <label for="e-back-at-store">Back at store</label>
+            <input id="e-back-at-store" type="time" data-field="back_at_store">
+          </div>
+          <div class="form-field">
+            <label for="e-wait">Wait time (min)</label>
+            <input id="e-wait" type="number" min="0" step="1" data-field="wait_time">
+          </div>
+          <div class="form-field">
+            <label for="e-drops">Amount of drops</label>
+            <input id="e-drops" type="number" min="0" step="1" data-field="amount_of_drops">
+          </div>
+          <div class="form-field">
+            <label for="e-length">Shift length (h)</label>
+            <input id="e-length" type="number" min="0" step="0.5" data-field="shift_length">
+          </div>
+          <div class="form-field">
+            <label for="e-weight">Weight of van (kg)</label>
+            <input id="e-weight" type="number" min="0" step="0.01" data-field="weight_kg">
+          </div>
+          <div class="form-field">
+            <label for="e-totes">Totes</label>
+            <input id="e-totes" type="number" min="0" step="1" data-field="totes">
+          </div>
+          <div class="form-field">
+            <label for="e-van">Van registration</label>
+            <input id="e-van" type="text" data-field="van">
+          </div>
+          <div class="form-field">
+            <label for="e-managers">Managers name</label>
+            <input id="e-managers" type="text" data-field="managers">
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button id="edit-submit" type="submit" class="btn-primary">Save changes</button>
+          <button id="edit-cancel" type="button" class="btn-reset">Cancel</button>
+          <span id="edit-result" class="form-result"></span>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="{{ url_for('static', filename='entries.js') }}"></script>
+</body>
+</html>
