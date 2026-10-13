@@ -1,0 +1,3 @@
+Date;Shift Start;Shift End;Time due to leave;Wait Time (minutes);First Drop Time;Last Drop Time;Amount of Drops;Shift Length (hours);Back at Store;Weight of Van (kg);Van Registration;Managers Name;Totes
+01 Jan 2024;06:30;14:30;06:55;15;07:20;14:00;20;8.0;14:30;650.5;AB12 CDE;John;65
+02 Jan 2024;06:30;14:30;06:55;10;07:15;14:05;22;8.0;14:35;700.0;AB12 CDE;Jane;70
