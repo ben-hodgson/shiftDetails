@@ -1,0 +1,17 @@
+services:
+  shiftdetails:
+    image: ghcr.io/ben-hodgson/shiftdetails:main
+    container_name: shiftdetails
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./data:/app/data
+    restart: unless-stopped
+    environment:
+      - FLASK_ENV=production
+    networks:
+      - shiftdetails_network
+
+networks:
+  shiftdetails_network:
+    driver: bridge
